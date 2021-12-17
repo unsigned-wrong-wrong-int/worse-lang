@@ -294,6 +294,7 @@ impl Value {
          return Some(f.ignore(n).ignore(x))
       }
       stack.push(n.apply(f).apply(x));
+      stack.push(f.duplicate());
       Some(m)
    }
 
