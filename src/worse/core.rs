@@ -236,31 +236,21 @@ impl Context for Pure {
    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Leaf {
-   True,
-   Byte(u8),
-   Invalid,
-}
-
-#[derive(Debug)]
-pub struct Decoder(Option<u8>);
+#[derive()]
+pub struct Decoder(Option<u32>);
 
 impl Context for Decoder {
-   type Result = Leaf;
+   type Result = Option<u32>;
 
    fn init() -> (Vec<Value>, Self) {
       (vec![Value::MARKER_INIT, Value::MARKER_INC], Self(Some(0)))
    }
 
-   fn result(self, x: Value, stack: Vec<Value>) -> Leaf {
-      if !stack.is_empty() {
-         return Leaf::Invalid
-      }
-      match (self.0, x) {
-         (Some(0), Value::MARKER_INC) => Leaf::True,
-         (Some(n), Value::MARKER_INIT) => Leaf::Byte(n),
-         _ => Leaf::Invalid,
+   fn result(self, x: Value, stack: Vec<Value>) -> Option<u32> {
+      if stack.is_empty() && x == Value::MARKER_INIT {
+         self.0
+      } else {
+         None
       }
    }
 
@@ -268,10 +258,7 @@ impl Context for Decoder {
       if stack.len() != 1 {
          return None
       }
-      self.0 = match self.0 {
-         Some(m) if n < 256 => m.checked_add(n as u8),
-         _ => None,
-      };
+      self.0 = self.0.and_then(|m| m.checked_add(n));
       stack.pop()
    }
 }

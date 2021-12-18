@@ -49,7 +49,7 @@ impl Program {
 
    pub fn wrap(self, input: impl Read) -> impl Read {
       Runtime {
-         input,
+         input: input.bytes(),
          code: self.0,
       }
    }
@@ -57,7 +57,7 @@ impl Program {
 
 #[derive(Debug)]
 struct Runtime<In: Read> {
-   input: In,
+   input: std::io::Bytes<In>,
    code: Value,
 }
 
@@ -70,33 +70,24 @@ impl<In: Read> Read for Runtime<In> {
       loop {
          list = list.eval::<Pure>();
          match list.apply(Value::CONST).eval::<Decoder>() {
-            Leaf::True => {
-               list = list.apply(Value::ZERO).eval::<Pure>();
-               match list.apply(Value::CONST).eval::<Decoder>() {
-                  Leaf::True => return Ok(0),
-                  Leaf::Byte(0) => {
-                     let mut buf = [0u8];
-                     let x = loop {
-                        match self.input.read(&mut buf) {
-                           Ok(0) => break Value::CONST,
-                           Ok(_) => break Value::number(buf[0] as u32),
-                           Err(e) if e.kind() == ErrorKind::Interrupted => {}
-                           Err(e) => return Err(e),
-                        }
-                     };
-                     list = list.apply(Value::ZERO).apply(x);
-                  }
-                  _ => break
-               }
+            // exit
+            Some(256) => break Ok(0),
+            // read
+            Some(257) => {
+               let n = match self.input.next() {
+                  Some(b) => b? as u32,
+                  None => 256, // EOF
+               };
+               list = list.apply(Value::ZERO).apply(Value::number(n));
             }
-            Leaf::Byte(b) => {
-               buf[0] = b;
+            // write
+            Some(n) if n < 256 => {
+               buf[0] = n as u8;
                self.code = list.apply(Value::ZERO);
-               return Ok(1)
+               break Ok(1)
             }
-            _ => break
+            _ => break Err(Error::new(ErrorKind::Other, "failed to decode value")),
          }
       }
-      Err(Error::new(ErrorKind::Other, "failed to decode value"))
    }
 }
