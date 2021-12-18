@@ -236,7 +236,7 @@ impl Context for Pure {
    }
 }
 
-#[derive()]
+#[derive(Debug)]
 pub struct Decoder(Option<u32>);
 
 impl Context for Decoder {
