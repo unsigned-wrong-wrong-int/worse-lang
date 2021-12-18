@@ -25,8 +25,8 @@ impl Program {
             a @ (b'A'..=b'Z' | b'a'..=b'z') => stack.push(Value::number(a as u32)),
             // application operator
             b'.' => {
-               let x = stack.pop().ok_or_else(syntax_error)?;
                let y = stack.pop().ok_or_else(syntax_error)?;
+               let x = stack.pop().ok_or_else(syntax_error)?;
                stack.push(x.apply(y));
             }
             // comment
