@@ -78,6 +78,6 @@ impl<In: Read> Read for Runtime<In> {
             _ => break
          }
       }
-      Err(Error::new(ErrorKind::InvalidData, "failed to decode value"))
+      Err(Error::new(ErrorKind::Other, "failed to decode value"))
    }
 }
