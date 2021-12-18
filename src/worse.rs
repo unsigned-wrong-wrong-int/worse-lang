@@ -14,14 +14,29 @@ fn syntax_error() -> Error {
 impl Program {
    pub fn load(src: impl Read) -> Result<Self> {
       let mut stack = vec![];
-      for b in src.bytes() {
+      let mut src = src.bytes();
+   'parse:
+      while let Some(b) = src.next() {
          match b? {
+            // built-ins
             b'+' => stack.push(Value::PLUS),
             b'-' => stack.push(Value::MINUS),
+            d @ b'0'..=b'9' => stack.push(Value::number((d - b'0') as u32)),
+            a @ (b'A'..=b'Z' | b'a'..=b'z') => stack.push(Value::number(a as u32)),
+            // application operator
             b'.' => {
                let x = stack.pop().ok_or_else(syntax_error)?;
                let y = stack.pop().ok_or_else(syntax_error)?;
                stack.push(x.apply(y));
+            }
+            // comment
+            b'#' => loop {
+               match src.next() {
+                  Some(Ok(b'\n')) => break,
+                  Some(Err(e)) => return Err(e),
+                  None => break 'parse,
+                  _ => {}
+               }
             }
             _ => {}
          }
