@@ -5,24 +5,30 @@ use self::core::*;
 #[derive(Debug)]
 pub struct Program(Value);
 
+use std::io::{Read, Result, Error, ErrorKind,};
+
+fn syntax_error() -> Error {
+   Error::new(ErrorKind::Other, "syntax error")
+}
+
 impl Program {
-   pub fn parse(src: impl IntoIterator<Item = u8>) -> Option<Self> {
+   pub fn load(src: impl Read) -> Result<Self> {
       let mut stack = vec![];
-      for c in src {
-         match c {
+      for b in src.bytes() {
+         match b? {
             b'+' => stack.push(Value::PLUS),
             b'-' => stack.push(Value::MINUS),
             b'.' => {
-               let x = stack.pop()?;
-               let y = stack.pop()?;
+               let x = stack.pop().ok_or_else(syntax_error)?;
+               let y = stack.pop().ok_or_else(syntax_error)?;
                stack.push(x.apply(y));
             }
             _ => {}
          }
       }
       match *stack {
-         [x] => Some(Self(x)),
-         _ => None,
+         [x] => Ok(Self(x)),
+         _ => Err(syntax_error()),
       }
    }
 
@@ -33,8 +39,6 @@ impl Program {
       }
    }
 }
-
-use std::io::{Read, Result, Error, ErrorKind,};
 
 #[derive(Debug)]
 struct Runtime<In: Read> {
