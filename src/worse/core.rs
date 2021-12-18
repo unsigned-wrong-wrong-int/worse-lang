@@ -83,6 +83,8 @@ impl Value {
          PairWidth::_30 => Value::pair_30(self, x),
          PairWidth::_64 => Value::pair_64(self, x),
          _ => {
+            self.inc_ref();
+            x.inc_ref();
             let v = Value { raw: Box::into_raw(Box::new(Pair(self, x, 0))) as u64 };
             v.inc_ref();
             v
@@ -224,9 +226,9 @@ impl Context for Pure {
       (vec![], Self)
    }
 
-   fn result(self, mut x: Value, stack: Vec<Value>) -> Value {
-      for v in stack {
-         x = x.apply(v)
+   fn result(self, mut x: Value, mut stack: Vec<Value>) -> Value {
+      while let Some(v) = stack.pop() {
+         x = x.apply(v);
       }
       x
    }
@@ -250,6 +252,10 @@ impl Context for Decoder {
       if stack.is_empty() && x == Value::MARKER_INIT {
          self.0
       } else {
+         for v in stack {
+            x.ignore(v);
+         }
+         x.ignore(x);
          None
       }
    }
