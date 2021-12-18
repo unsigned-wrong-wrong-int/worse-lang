@@ -38,7 +38,9 @@ impl Program {
                   _ => {}
                }
             }
-            _ => {}
+            // whitespaces
+            b' ' | b'\t' | b'\n' | b'\r' => {}
+            _ => return Err(syntax_error()),
          }
       }
       match *stack {
