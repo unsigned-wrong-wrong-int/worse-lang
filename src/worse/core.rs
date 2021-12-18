@@ -145,7 +145,7 @@ impl Value {
                Self { raw: self.raw >> 4 & 0x1fff }),
             0b1100 => Data::Pair(Self { raw: self.raw >> 34 },
                Self { raw: self.raw >> 4 & 0x3fffffff }),
-            _ => Data::Number((self.raw >> 2) as u32),
+            _ => Data::Number((self.raw >> 4) as u32),
          },
          _ => Data::None,
       }
