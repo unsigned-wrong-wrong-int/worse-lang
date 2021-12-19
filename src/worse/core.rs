@@ -71,6 +71,14 @@ impl Value {
          _ => PairWidth::_13,
       }
    }
+
+   fn get_number(self) -> Option<u32> {
+      if self.raw & 0b1111 == 0b0010 {
+         Some((self.raw >> 4) as u32)
+      } else {
+         None
+      }
+   }
 }
 
 #[derive(Debug)]
@@ -160,7 +168,7 @@ impl Value {
          }
          Value::PRED => if matches!(x, Value::PRED) {
             return Value::CONST_ZERO
-         } else if let Data::Number(n) = x.data() {
+         } else if let Some(n) = x.get_number() {
             return Value::number(n.saturating_sub(1))
          }
          Value::ZERO => return Value::ONE.ignore(x),
@@ -182,22 +190,22 @@ impl Value {
                Data::Number(n) => if let Some(v) = n.checked_pow(m) {
                   return Value::number(v)
                }
-               Data::Pair(u, Value::PLUS) => if let Data::Number(n) = u.data() {
+               Data::Pair(u, Value::PLUS) => if let Some(n) = u.get_number() {
                   if let Some(v) = m.checked_mul(n) {
                      return Value::number(v)
                   }
                }
                _ => {}
             }
-            Data::Pair(Value::PLUS, u) => if let Data::Number(m) = u.data() {
-               if let Data::Number(n) = x.data() {
+            Data::Pair(Value::PLUS, u) => if let Some(m) = u.get_number() {
+               if let Some(n) = x.get_number() {
                   if let Some(v) = m.checked_add(n) {
                      return Value::number(v)
                   }
                }
             }
-            Data::Pair(Value::MINUS, u) => if let Data::Number(m) = u.data() {
-               if let Data::Number(n) = x.data() {
+            Data::Pair(Value::MINUS, u) => if let Some(m) = u.get_number() {
+               if let Some(n) = x.get_number() {
                   return Value::number(m.saturating_sub(n))
                }
             }
@@ -276,9 +284,11 @@ impl Value {
       }
       let m = stack.pop().unwrap();
       let n = stack.pop().unwrap();
-      if let Data::Number(i) = m.data() {
-         if let Data::Number(j) = n.data() {
-            return i.checked_add(j).map(Value::number)
+      if let Some(i) = m.get_number() {
+         if let Some(j) = n.get_number() {
+            if let Some(k) = i.checked_add(j) {
+               return Some(Value::number(k))
+            }
          }
       }
       let f = stack.pop().unwrap();
@@ -304,8 +314,8 @@ impl Value {
          Value::MINUS => if n == Value::MINUS {
             return Some(Value::ZERO)
          }
-         _ => if let Data::Number(i) = m.data() {
-            if let Data::Number(j) = n.data() {
+         _ => if let Some(i) = m.get_number() {
+            if let Some(j) = n.get_number() {
                return Some(Value::number(i.saturating_sub(j)))
             }
          }
@@ -320,7 +330,7 @@ impl Value {
          return None
       }
       let m = stack.pop().unwrap();
-      if let Data::Number(i) = m.data() {
+      if let Some(i) = m.get_number() {
          return Some(Value::number(i.saturating_sub(1)))
       }
       let f = stack.pop().unwrap();
@@ -388,7 +398,7 @@ impl Value {
 
    fn eval_number(i: u32, f: Value, stack: &mut Vec<Value>) -> Option<Value> {
       match f.data() {
-         Data::Pair(n, Value::PLUS) => if let Data::Number(j) = n.data() {
+         Data::Pair(n, Value::PLUS) => if let Some(j) = n.get_number() {
             if let Some(k) = i.checked_mul(j) {
                return Some(Value::number(k))
             }
