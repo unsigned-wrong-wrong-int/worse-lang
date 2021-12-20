@@ -185,6 +185,32 @@ S combinator
 
 </details>
 
+## Evaluation Strategy and I/O
+
+Worse is purely functional language with lazy evaluation.
+
+I/O is represented using Church pairs.
+
+```
+cons x y f = f x y
+car p      = p K
+cdr p      = p 0
+```
+
+Program `p` is run in following steps.
+
+1. If `car p` is Church numeral `n`, then
+  - If `n` is 256, then
+    1. Terminate execution of the program.
+  - If `n` is 257, then
+    1. Get byte `m` from input stream. (EOF is mapped to 256)
+    2. Run `cdr p m`.
+  - If `n` is less than 256, then
+    1. Append byte `n` to output stream.
+    2. Run `cdr p`.
+  - If `n` is any other value then, raise error.
+2. Otherwise, raise error.
+
 ## Hello World Program
 
 This program prints `Hello, world!` to stdout.
@@ -196,4 +222,4 @@ This program prints `Hello, world!` to stdout.
 ..-+.1.-+.1.52+...-+.1.-+.1.44..0.............................
 ```
 
-Other programs are in ./samples/ directory.
+Other programs are avaliable in ./samples/ directory.
