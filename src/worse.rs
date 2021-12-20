@@ -22,7 +22,6 @@ impl Program {
             b'+' => stack.push(Value::PLUS),
             b'-' => stack.push(Value::MINUS),
             d @ b'0'..=b'9' => stack.push(Value::number((d - b'0') as u32)),
-            a @ (b'A'..=b'Z' | b'a'..=b'z') => stack.push(Value::number(a as u32)),
             // application operator
             b'.' => {
                let y = stack.pop().ok_or_else(syntax_error)?;
