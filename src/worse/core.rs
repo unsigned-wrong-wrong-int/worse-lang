@@ -190,7 +190,7 @@ impl Value {
                Data::Number(n) => if let Some(v) = n.checked_pow(m) {
                   return Value::number(v)
                }
-               Data::Pair(u, Value::PLUS) => if let Some(n) = u.get_number() {
+               Data::Pair(Value::PLUS, u) => if let Some(n) = u.get_number() {
                   if let Some(v) = m.checked_mul(n) {
                      return Value::number(v)
                   }
@@ -398,7 +398,7 @@ impl Value {
 
    fn eval_number(i: u32, f: Value, stack: &mut Vec<Value>) -> Option<Value> {
       match f.data() {
-         Data::Pair(n, Value::PLUS) => if let Some(j) = n.get_number() {
+         Data::Pair(Value::PLUS, n) => if let Some(j) = n.get_number() {
             if let Some(k) = i.checked_mul(j) {
                return Some(Value::number(k))
             }
