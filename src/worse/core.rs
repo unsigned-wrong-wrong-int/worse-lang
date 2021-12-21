@@ -186,16 +186,10 @@ impl Value {
             return Value::CONST
          }
          _ => match self.data() {
-            Data::Number(m) => match x.data() {
-               Data::Number(n) => if let Some(v) = n.checked_pow(m) {
+            Data::Number(m) => if let Some(n) = x.get_number() {
+               if let Some(v) = n.checked_pow(m) {
                   return Value::number(v)
                }
-               Data::Pair(Value::PLUS, u) => if let Some(n) = u.get_number() {
-                  if let Some(v) = m.checked_mul(n) {
-                     return Value::number(v)
-                  }
-               }
-               _ => {}
             }
             Data::Pair(Value::PLUS, u) => if let Some(m) = u.get_number() {
                if let Some(n) = x.get_number() {
@@ -210,6 +204,13 @@ impl Value {
                }
             }
             Data::Pair(Value::CONST, u) => return u.ignore(x),
+            Data::Pair(u, v) if x == Value::ZERO => if let Some(m) = u.get_number() {
+               if let Data::Pair(Value::PLUS, w) = v.data() {
+                  if let Some(n) = w.get_number() {
+                     return Value::number(m.saturating_mul(n))
+                  }
+               }
+            }
             _ => {}
          },
       }
@@ -397,18 +398,21 @@ impl Value {
    }
 
    fn eval_number(i: u32, f: Value, stack: &mut Vec<Value>) -> Option<Value> {
-      match f.data() {
-         Data::Pair(Value::PLUS, n) => if let Some(j) = n.get_number() {
-            if let Some(k) = i.checked_mul(j) {
-               return Some(Value::number(k))
-            }
-         }
-         Data::Number(j) => if let Some(k) = j.checked_pow(i) {
+      if let Some(j) = f.get_number() {
+         if let Some(k) = j.checked_pow(i) {
             return Some(Value::number(k))
          }
-         _ => {}
       }
       let x = stack.pop().unwrap();
+      if x == Value::ZERO {
+         if let Data::Pair(Value::PLUS, n) = f.data() {
+            if let Some(j) = n.get_number() {
+               if let Some(k) = i.checked_mul(j) {
+                  return Some(Value::number(k))
+               }
+            }
+         }
+      }
       stack.push(Value::number(i - 1).apply(f).apply(x));
       Some(f.duplicate())
    }
